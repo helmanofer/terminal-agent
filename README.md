@@ -13,8 +13,8 @@ An AI-powered terminal assistant that can execute shell commands and search the 
 
 1. Clone this repository:
 ```bash
-git clone <repository-url>
-cd terminal-assistant
+git clone https://github.com/helmanofer/terminal-agent.git
+cd terminal-agent
 ```
 
 2. Run the setup script:
@@ -97,6 +97,7 @@ GEMINI_MODEL_NAME=gemini-1.5-flash  # Optional, defaults to gemini-1.5-flash
   - `google-generativeai`
   - `plumbum`
   - `ddgs`
+  - `colorama`
 
 ## Safety Features
 
