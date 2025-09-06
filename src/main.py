@@ -1,31 +1,74 @@
 import asyncio
 import sys
+from typing import Annotated
 
-from plumbum import local
-from pydantic import BaseModel, Field
-from pydantic_ai import Agent
+from plumbum import ProcessExecutionError, local
+from pydantic import Field
+from pydantic_ai import Agent, Tool
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.google import GoogleProvider
 
 from src.settings import settings
 
 
-class ShellCommand(BaseModel):
-    """Represents a shell command to be executed."""
+class ShellTool(Tool):
+    def __init__(self):
+        super().__init__(self.run)
 
-    command: str = Field(..., description="The shell command to execute.")
-    reasoning: str = Field(
-        ..., description="A brief explanation of why this command was chosen."
-    )
-    read_only: bool = Field(
-        ...,
-        description="Whether the command is read-only (e.g., 'ls', 'cat') or might modify the system (e.g., 'rm', 'mkdir').",
-    )
+    def run(
+        self,
+        command: Annotated[
+            str,
+            Field(
+                ...,
+                description="The valid, executable shell command to run. Do not include explanations or context.",
+            ),
+        ],
+        read_only: Annotated[
+            bool,
+            Field(
+                ...,
+                description="Is the command read-only? (e.g., 'ls', 'cat', 'grep'). Set to false for commands that modify state (e.g., 'rm', 'mkdir', 'mv').",
+            ),
+        ],
+    ) -> str:
+        """
+        Executes a shell command to interact with the file system and other command-line tools.
+        Useful for listing files (ls), finding files (find), checking file content (cat, grep), and checking file sizes (du).
+        Returns the stdout and stderr of the command.
+        """
+        print(f"\n▶️  Command: {command}")
+        try:
+            execute = False
+            if read_only:
+                execute = True
+            else:
+                confirm = input("  Execute? (y/n): ").lower()
+                if confirm == "y":
+                    execute = True
+
+            if execute:
+                bash = local["bash"]
+                retcode, stdout, stderr = bash["-c", command].run(retcode=None)
+                output = f"Stdout:\n{stdout}\nStderr:\n{stderr}\n"
+                print(f"  Output:\n{output}")
+                return output
+            else:
+                return "User cancelled execution."
+
+        except ProcessExecutionError as e:
+            error_output = f"An error occurred.\nStdout:\n{e.stdout}\nStderr:\n{e.stderr}\n"
+            print(f"  {error_output}")
+            return error_output
+        except Exception as e:
+            error_output = f"An unexpected error occurred: {e}"
+            print(f"  {error_output}")
+            return error_output
 
 
 async def main():
     """
-    This is the main function that runs the Pydantic AI agent.
+    The main function for the terminal agent.
     """
     if len(sys.argv) < 2:
         print("Usage: python -m src.main <your query>")
@@ -35,40 +78,15 @@ async def main():
 
     provider = GoogleProvider(api_key=settings.gemini_api_key)
     model = GoogleModel(settings.gemini_model_name, provider=provider)
-    ai = Agent(model, output_type=ShellCommand)
+    shell_tool = ShellTool()
+    ai = Agent(model, tools=[shell_tool])
 
-    print(f"Query: {query}")
-    print("Thinking...")
+    print(f"Goal: {query}\n")
+    print("🤔 Thinking...")
 
-    result = await ai.run(query)
-    shell_command: ShellCommand = result.output
-
-    print(f"\nReasoning: {shell_command.reasoning}")
-    print(f"Command: {shell_command.command}")
-
-    try:
-        execute = False
-        if shell_command.read_only:
-            execute = True
-        else:
-            confirm = input("\nExecute? (y/n): ").lower()
-            if confirm == "y":
-                execute = True
-
-        if execute:
-            bash = local["bash"]
-            retcode, stdout, stderr = bash["-c", shell_command.command].run()
-            if stdout:
-                print(f"\nOutput:\n{stdout}")
-            if stderr:
-                print(f"\nErrors:\n{stderr}")
-        else:
-            print("Execution cancelled.")
-    except FileNotFoundError:
-        print("bash command not found. Please ensure bash is in your PATH.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
+    # The agent will now handle the conversation and tool calls automatically
+    response = await ai.run(query)
+    print(f"\n✅ Final Answer: {response}")
 
 
 if __name__ == "__main__":
