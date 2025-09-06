@@ -1,7 +1,7 @@
 import asyncio
-import subprocess
 import sys
 
+from plumbum import local
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from pydantic_ai.models.google import GoogleModel
@@ -45,26 +45,16 @@ async def main():
     try:
         confirm = input("\nExecute? (y/n): ").lower()
         if confirm == "y":
-            process = subprocess.run(
-                shell_command.command,
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if process.stdout:
-                print(f"\nOutput:\n{process.stdout}")
-            if process.stderr:
-                print(f"\nErrors:\n{process.stderr}")
+            bash = local["bash"]
+            retcode, stdout, stderr = bash["-c", shell_command.command].run()
+            if stdout:
+                print(f"\nOutput:\n{stdout}")
+            if stderr:
+                print(f"\nErrors:\n{stderr}")
         else:
             print("Execution cancelled.")
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred: {e}")
-        if e.stdout:
-            print(f"\nOutput:\n{e.stdout}")
-        if e.stderr:
-            print(f"\nErrors:\n{e.stderr}")
+    except FileNotFoundError:
+        print("bash command not found. Please ensure bash is in your PATH.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 

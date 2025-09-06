@@ -17,7 +17,7 @@ classifiers = [
 dependencies = [
   "pydantic-ai",
   "google-generativeai",
-  "pydantic-settings",
+  "plumbum",
 ]
 
 [project.optional-dependencies]
