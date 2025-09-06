@@ -18,6 +18,7 @@ dependencies = [
   "pydantic-ai",
   "google-generativeai",
   "plumbum",
+  "ddgs",
 ]
 
 [project.optional-dependencies]

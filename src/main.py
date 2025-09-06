@@ -5,9 +5,10 @@ from typing import Annotated
 from plumbum import ProcessExecutionError, local
 from pydantic import Field
 from pydantic_ai import Agent, Tool
-from pydantic_ai.result import AgentRunResult
+from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.google import GoogleProvider
+from pydantic_ai.run import AgentRunResult
 
 from src.settings import settings
 
@@ -34,8 +35,9 @@ class ShellTool(Tool):
         ],
     ) -> str:
         """
-        Executes a shell command to interact with the file system and other command-line tools.
-        Useful for listing files (ls), finding files (find), checking file content (cat, grep), and checking file sizes (du).
+        Executes a shell command on the user's local machine.
+        Use this for tasks involving file system operations (ls, find, du), process management (ps, kill),
+        or other command-line interactions. Do NOT use this for general knowledge questions; use the search tool for that.
         Returns the stdout and stderr of the command.
         """
         print(f"\n▶️  Command: {command}")
@@ -79,8 +81,11 @@ async def main():
 
     provider = GoogleProvider(api_key=settings.gemini_api_key)
     model = GoogleModel(settings.gemini_model_name, provider=provider)
+
+    search_tool = duckduckgo_search_tool()
     shell_tool = ShellTool()
-    ai = Agent(model, tools=[shell_tool])
+
+    ai = Agent(model, tools=[shell_tool, search_tool])
 
     print(f"Goal: {query}\n")
     print("🤔 Thinking...")
@@ -88,6 +93,7 @@ async def main():
     # The agent will now handle the conversation and tool calls automatically
     response: AgentRunResult = await ai.run(query)
     print(f"\n✅ Final Answer: {response.output}")
+
 
 
 if __name__ == "__main__":
