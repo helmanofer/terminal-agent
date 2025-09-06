@@ -1,0 +1,60 @@
+[project]
+name = "github-copilot-client"
+version = "0.1.0"
+description = "Python client for GitHub Copilot API with OAuth authentication"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Your Name", email = "your.email@example.com" }]
+keywords = ["ai", "copilot", "github", "llm", "oauth"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "openai>=1.0.0",
+  "requests>=2.31.0",
+  "keyring>=24.0.0",
+  "python-dotenv>=1.0.0",
+  "pydantic-ai",
+  "google-generativeai",
+  "pydantic-settings",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/github-copilot-client"
+Issues = "https://github.com/yourusername/github-copilot-client/issues"
+Repository = "https://github.com/yourusername/github-copilot-client"
+
+[project.scripts]
+github-copilot-auth = "src.github_copilot_auth:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0",
+  "black>=23.0.0",
+  "flake8>=6.0.0",
+  "mypy>=1.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
