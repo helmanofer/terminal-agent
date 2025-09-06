@@ -10,6 +10,7 @@ from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.google import GoogleProvider
+from rich import print
 
 from src.settings import settings
 
@@ -134,7 +135,7 @@ async def create_shell_agent(
         - Status checking: systemctl status, df -h, top
         - File operations: grep, sed, awk
         """
-        print(f"\n▶️  Executing: `{command}` with timeout {timeout} seconds")
+        print(f"\n[bold blue]▶️  Executing:[/bold blue] [yellow]`{command}`[/yellow] with timeout {timeout} seconds")
 
         try:
             execute = False
@@ -151,11 +152,11 @@ async def create_shell_agent(
 
                 # Display output to user immediately
                 if stdout.strip():
-                    print(f"📄 Output:\n{stdout}")
+                    print(f"[green]📄 Output:[/green]\n{stdout}")
                 if stderr.strip():
-                    print(f"⚠️  Stderr:\n{stderr}")
+                    print(f"[yellow]⚠️  Stderr:[/yellow]\n{stderr}")
                 if retcode != 0:
-                    print(f"❌ Exit code: {retcode}")
+                    print(f"[red]❌ Exit code: {retcode}[/red]")
 
                 # Determine success based on return code
                 success = retcode == 0
@@ -173,10 +174,10 @@ async def create_shell_agent(
         except ProcessExecutionError as e:
             # Display error output to user immediately
             if e.stdout.strip():
-                print(f"📄 Output:\n{e.stdout}")
+                print(f"[green]📄 Output:[/green]\n{e.stdout}")
             if e.stderr.strip():
-                print(f"⚠️  Stderr:\n{e.stderr}")
-            print(f"❌ Exit code: {e.retcode}")
+                print(f"[yellow]⚠️  Stderr:[/yellow]\n{e.stderr}")
+            print(f"[red]❌ Exit code: {e.retcode}[/red]")
 
             output = (
                 f"Command failed with exit code {e.retcode}\n"
@@ -195,7 +196,7 @@ async def create_shell_agent(
 
 async def run_shell_workflow(query: str, model: Any) -> None:
     """Main workflow for handling shell queries with conversation continuity"""
-    print(f"🔍 Starting shell workflow for: {query}")
+    print(f"[bold cyan]🔍 Starting shell workflow for:[/bold cyan] [white]{query}[/white]")
 
     context = ShellContext(query=query, steps_taken=[], discoveries={})
 
@@ -211,7 +212,7 @@ async def run_shell_workflow(query: str, model: Any) -> None:
 
     while iteration < context.max_iterations:
         iteration += 1
-        print(f"\n📋 Iteration {iteration}")
+        print(f"\n[bold magenta]📋 Iteration {iteration}[/bold magenta]")
 
         try:
             # Construct the prompt for this iteration
@@ -232,33 +233,33 @@ async def run_shell_workflow(query: str, model: Any) -> None:
             context.steps_taken.append(f"Iteration {iteration}")
 
             if isinstance(output, TaskComplete):
-                print("\n✅ Task completed successfully!")
-                print(f"Result: {output.result}")
-                print(f"Summary: {output.summary}")
-                print(f"Total iterations: {iteration}")
-                print(f"Usage: {usage}")
+                print("\n[bold green]✅ Task completed successfully![/bold green]")
+                print(f"[green]Result:[/green] {output.result}")
+                print(f"[green]Summary:[/green] {output.summary}")
+                print(f"[blue]Total iterations:[/blue] {iteration}")
+                print(f"[blue]Usage:[/blue] {usage}")
                 return
 
             elif isinstance(output, TaskContinue):
-                print(f"🔄 Continuing: {output.next_step}")
-                print(f"Reason: {output.reason}")
+                print(f"[yellow]🔄 Continuing:[/yellow] {output.next_step}")
+                print(f"[yellow]Reason:[/yellow] {output.reason}")
                 # Update message history to maintain conversation context
                 message_history = result.all_messages()
 
             elif isinstance(output, TaskFailed):
-                print(f"\n❌ Task failed: {output.error}")
-                print(f"Attempted steps: {', '.join(output.attempted_steps)}")
+                print(f"\n[bold red]❌ Task failed:[/bold red] {output.error}")
+                print(f"[red]Attempted steps:[/red] {', '.join(output.attempted_steps)}")
                 return
 
         except Exception as e:
-            print(f"\n💥 Error in iteration {iteration}: {e}")
+            print(f"\n[bold red]💥 Error in iteration {iteration}:[/bold red] {e}")
             if iteration >= 3:  # Give up after 3 errors
-                print("Too many errors, giving up.")
+                print("[red]Too many errors, giving up.[/red]")
                 return
             continue
 
-    print(f"\n⏰ Reached maximum iterations ({context.max_iterations})")
-    print(f"Steps taken: {', '.join(context.steps_taken)}")
+    print(f"\n[yellow]⏰ Reached maximum iterations ({context.max_iterations})[/yellow]")
+    print(f"[blue]Steps taken:[/blue] {', '.join(context.steps_taken)}")
 
 
 async def async_main() -> None:
@@ -276,7 +277,7 @@ async def async_main() -> None:
     provider = GoogleProvider(api_key=settings.gemini_api_key)
     model = GoogleModel(settings.gemini_model_name, provider=provider)
 
-    print(f"🎯 Goal: {query}\n")
+    print(f"[bold cyan]🎯 Goal:[/bold cyan] [white]{query}[/white]\n")
 
     await run_shell_workflow(query, model)
 

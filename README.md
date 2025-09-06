@@ -97,7 +97,7 @@ GEMINI_MODEL_NAME=gemini-1.5-flash  # Optional, defaults to gemini-1.5-flash
   - `google-generativeai`
   - `plumbum`
   - `ddgs`
-  - `colorama`
+  - `rich`
 
 ## Safety Features
 

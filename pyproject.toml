@@ -19,7 +19,7 @@ dependencies = [
   "google-generativeai",
   "plumbum",
   "ddgs",
-  "colorama>=0.4.6",
+  "rich>=13.0.0",
 ]
 
 [project.scripts]
