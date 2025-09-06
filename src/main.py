@@ -17,6 +17,10 @@ class ShellCommand(BaseModel):
     reasoning: str = Field(
         ..., description="A brief explanation of why this command was chosen."
     )
+    read_only: bool = Field(
+        ...,
+        description="Whether the command is read-only (e.g., 'ls', 'cat') or might modify the system (e.g., 'rm', 'mkdir').",
+    )
 
 
 async def main():
@@ -43,8 +47,15 @@ async def main():
     print(f"Command: {shell_command.command}")
 
     try:
-        confirm = input("\nExecute? (y/n): ").lower()
-        if confirm == "y":
+        execute = False
+        if shell_command.read_only:
+            execute = True
+        else:
+            confirm = input("\nExecute? (y/n): ").lower()
+            if confirm == "y":
+                execute = True
+
+        if execute:
             bash = local["bash"]
             retcode, stdout, stderr = bash["-c", shell_command.command].run()
             if stdout:
@@ -57,6 +68,7 @@ async def main():
         print("bash command not found. Please ensure bash is in your PATH.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
 
 
 if __name__ == "__main__":
