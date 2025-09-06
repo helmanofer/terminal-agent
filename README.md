@@ -1,16 +1,15 @@
-# GitHub Copilot Authentication Client
+# Terminal Agent
 
-A Python client for authenticating with GitHub Copilot using OAuth device flow, based on SST OpenCode authentication patterns.
+An AI-powered terminal assistant that can execute shell commands and search the web to help you with various tasks.
 
 ## Features
 
-- **OAuth Device Flow Authentication** - User-friendly authentication without requiring manual token creation
-- **Secure Token Storage** - Uses system keyring and file fallback for token persistence
-- **Automatic Token Refresh** - Handles token expiration and refresh automatically
-- **Multiple Model Support** - Access to GPT-4, Claude, and other models through Copilot
-- **SST OpenCode Compatible** - Follows the same authentication patterns as SST OpenCode
+- **AI-Powered Command Execution** - Uses AI to understand and execute shell commands
+- **Web Search Integration** - Can search DuckDuckGo for information
+- **Interactive Shell Tool** - Executes commands with user confirmation for safety
+- **Google Gemini Integration** - Powered by Google's Gemini AI model
 
-## Installation
+## Installation & Setup
 
 1. Clone this repository:
 ```bash
@@ -18,214 +17,147 @@ git clone <repository-url>
 cd terminal-assistant
 ```
 
-2. Install dependencies:
+2. Run the setup script:
 ```bash
-uv sync
-# or with pip:
-pip install -r requirements.txt
+./setup.sh
+```
+
+This will automatically:
+- Add the `q()` function to your shell configuration (.bashrc or .zshrc)
+- Allow you to run the terminal agent from anywhere using `q <your query>`
+
+3. Restart your terminal or run:
+```bash
+source ~/.bashrc  # or ~/.zshrc for zsh users
 ```
 
 ## Quick Start
 
-### Basic Usage
+### Using the `q` Command
 
-```python
-from src.github_copilot_client import GitHubCopilotClient
-
-# Create client
-client = GitHubCopilotClient()
-
-# Authenticate (will prompt for device code if needed)
-if client.authenticate():
-    print("Authentication successful!")
-    
-    # Send a chat completion request
-    messages = [
-        {"role": "system", "content": "You are a helpful coding assistant."},
-        {"role": "user", "content": "Write a Python function to calculate factorial."}
-    ]
-    
-    response = client.chat_completion(messages, model="gpt-4")
-    print(response)
-else:
-    print("Authentication failed")
-```
-
-### Run the Example
+After setup, you can use the terminal agent from anywhere:
 
 ```bash
-# Using virtual environment
-.venv/bin/python example.py
+# Ask questions
+q "How do I list all files in a directory?"
 
-# Or activate venv first
-source .venv/bin/activate  # On Windows: .venv\\Scripts\\activate
-python example.py
+# Get help with commands  
+q "What's the difference between rm and rm -rf?"
+
+# Ask for system information
+q "Show me my disk usage"
+
+# Search for information
+q "What's the latest version of Python?"
 ```
 
-## Authentication Flow
+### Manual Usage
 
-The client uses GitHub's OAuth device flow for authentication:
+You can also run it manually:
 
-1. **Device Code Request** - Client requests a device code from GitHub
-2. **User Authorization** - User visits GitHub and enters the device code
-3. **Token Exchange** - Client polls for and receives the access token
-4. **Copilot Token** - GitHub token is exchanged for a Copilot API token
-5. **Secure Storage** - Tokens are stored securely using system keyring
+```bash
+# From the project directory
+uvx --from . my-terminal-agent "your query here"
 
-### First Time Setup
-
-When you run the client for the first time:
-
-1. The client will display a URL and device code
-2. Visit the URL in your browser
-3. Enter the device code when prompted
-4. Authorize the application
-5. The client will automatically receive and store the tokens
-
-## API Usage
-
-### Chat Completion
-
-```python
-messages = [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Explain Python decorators."}
-]
-
-response = client.chat_completion(
-    messages=messages,
-    model="gpt-4",
-    temperature=0.7,
-    max_tokens=500
-)
-```
-
-### List Available Models
-
-```python
-models = client.list_models()
-for model in models:
-    print(f"Model: {model['id']}")
-```
-
-### Check Authentication Status
-
-```python
-if client.is_authenticated():
-    print("Ready to use Copilot API")
-else:
-    print("Authentication required")
-```
-
-### Logout
-
-```python
-client.logout()  # Clears all stored tokens
+# Or install locally first
+pip install -e .
+my-terminal-agent "your query here"
 ```
 
 ## Configuration
 
-### Token Storage
-
-Tokens are stored securely using:
-
-1. **System Keyring** (preferred) - Uses OS-native secure storage
-2. **File Fallback** - `~/.local/share/opencode/auth.json`
-
 ### Environment Variables
 
-You can also set tokens via environment variables:
+You need to set your Google Gemini API key:
 
 ```bash
-export GITHUB_TOKEN="your_github_token"
+export GEMINI_API_KEY="your_gemini_api_key_here"
 ```
+
+Or create a `.env` file in the project directory:
+
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL_NAME=gemini-1.5-flash  # Optional, defaults to gemini-1.5-flash
+```
+
+### How It Works
+
+1. **Query Processing** - The AI agent analyzes your natural language query
+2. **Tool Selection** - Chooses between shell commands or web search based on your request
+3. **Safety Confirmation** - For non-read-only commands, asks for confirmation before execution
+4. **Result Display** - Shows the output and provides a final answer
 
 ## Requirements
 
 - Python 3.12+
-- Active GitHub Copilot subscription
+- Google Gemini API key
 - Required packages:
-  - `requests>=2.31.0`
-  - `keyring>=24.0.0`
-  - `python-dotenv>=1.0.0`
+  - `pydantic-ai`
+  - `google-generativeai`
+  - `plumbum`
+  - `ddgs`
 
-## Security Considerations
+## Safety Features
 
-⚠️ **Important Security Notes:**
-
-- This implementation uses **unofficial, reverse-engineered** GitHub Copilot APIs
-- GitHub doesn't provide an official public API for Copilot
-- This may violate GitHub's Terms of Service
-- APIs can change without notice, potentially breaking the implementation
-- Use at your own risk and consider official alternatives for production
-
-### Official Alternatives
-
-For production use, consider:
-
-- **GitHub Models** (when available)
-- **Direct OpenAI API**
-- **Azure OpenAI Service**
+- **Command Confirmation** - Non-read-only commands require user confirmation
+- **Read-only Auto-execution** - Safe commands like `ls`, `cat`, `grep` run automatically
+- **Error Handling** - Graceful handling of command failures and exceptions
 
 ## Troubleshooting
 
-### Authentication Issues
+### API Key Issues
 
-If authentication fails:
+If you get authentication errors:
 
-1. Ensure you have an active GitHub Copilot subscription
-2. Check that Copilot is enabled in your GitHub settings
-3. Try logging out and re-authenticating: `client.logout()` then `client.authenticate(force_refresh=True)`
+1. Ensure your `GEMINI_API_KEY` is set correctly
+2. Verify your API key is active and has quota remaining
+3. Check that you're using a valid Gemini model name
 
-### Import Errors
+### Command Not Found
 
-If you get import errors:
+If `q` command is not found after setup:
 
-1. Ensure you're using the virtual environment: `.venv/bin/python`
-2. Check that dependencies are installed: `uv sync`
-3. Verify you're importing from the correct path
+1. Restart your terminal
+2. Or run: `source ~/.bashrc` (or `~/.zshrc` for zsh)
+3. Verify the function was added to your shell config
 
-### Token Expiration
+### Permission Errors
 
-Tokens are automatically refreshed, but if you experience issues:
+If you get permission errors:
 
-```python
-# Force re-authentication
-client.authenticate(force_refresh=True)
-```
+1. Make sure the setup script is executable: `chmod +x setup.sh`
+2. Check file permissions in the project directory
 
-## Development
-
-### Testing
-
-Run the test script to verify everything works:
+## Examples
 
 ```bash
-.venv/bin/python test_copilot.py
+# File operations
+q "Show me all Python files in this directory"
+q "What's in my home directory?"
+q "Find files larger than 100MB"
+
+# System information  
+q "How much disk space do I have?"
+q "Show running processes"
+q "What's my IP address?"
+
+# Web search
+q "What's the latest version of Node.js?"
+q "How to install Docker on Ubuntu?"
 ```
 
-### File Structure
+## File Structure
 
 ```
-src/
-├── __init__.py                    # Package initialization
-├── github_copilot_auth_device.py  # OAuth device flow implementation
-├── github_copilot_client.py       # Main client with token management
-└── github_copilot_auth.py         # CLI entry point
-
-example.py                         # Usage example
-test_copilot.py                   # Test script
-pyproject.toml                    # Project configuration
+├── src/
+│   ├── main.py           # Main application entry point
+│   └── settings.py       # Configuration settings
+├── setup.sh              # Shell setup script
+├── pyproject.toml        # Project configuration
+└── README.md            # This file
 ```
-
-## Contributing
-
-This implementation is based on reverse engineering and may need updates as GitHub's APIs change. Contributions are welcome!
 
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Disclaimer
-
-This project is not affiliated with GitHub or Microsoft. Use at your own risk and ensure compliance with GitHub's Terms of Service.

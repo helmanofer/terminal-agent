@@ -1,5 +1,5 @@
 [project]
-name = "github-copilot-client"
+name = "terminal-agent"
 version = "0.1.0"
 description = "Python client for GitHub Copilot API with OAuth authentication"
 readme = "README.md"
@@ -19,7 +19,11 @@ dependencies = [
   "google-generativeai",
   "plumbum",
   "ddgs",
+  "colorama>=0.4.6",
 ]
+
+[project.scripts]
+my-terminal-agent = "src.main:main"
 
 [project.optional-dependencies]
 dev = [
