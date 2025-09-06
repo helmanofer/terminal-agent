@@ -39,16 +39,16 @@ After setup, you can use the terminal agent from anywhere:
 
 ```bash
 # Ask questions
-q "How do I list all files in a directory?"
+q How do I list all files in a directory?
 
 # Get help with commands  
-q "What's the difference between rm and rm -rf?"
+q What's the difference between rm and rm -rf?
 
 # Ask for system information
-q "Show me my disk usage"
+q Show me my disk usage
 
 # Search for information
-q "What's the latest version of Python?"
+q What's the latest version of Python?
 ```
 
 ### Manual Usage
@@ -134,18 +134,18 @@ If you get permission errors:
 
 ```bash
 # File operations
-q "Show me all Python files in this directory"
-q "What's in my home directory?"
-q "Find files larger than 100MB"
+q Show me all Python files in this directory
+q What's in my home directory?
+q Find files larger than 100MB
 
 # System information  
-q "How much disk space do I have?"
-q "Show running processes"
-q "What's my IP address?"
+q How much disk space do I have?
+q Show running processes
+q What's my IP address?
 
 # Web search
-q "What's the latest version of Node.js?"
-q "How to install Docker on Ubuntu?"
+q What's the latest version of Node.js?
+q How to install Docker on Ubuntu?
 ```
 
 ## File Structure
