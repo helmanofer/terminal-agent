@@ -5,6 +5,7 @@ from typing import Annotated
 from plumbum import ProcessExecutionError, local
 from pydantic import Field
 from pydantic_ai import Agent, Tool
+from pydantic_ai.result import AgentRunResult
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.google import GoogleProvider
 
@@ -51,7 +52,7 @@ class ShellTool(Tool):
                 bash = local["bash"]
                 retcode, stdout, stderr = bash["-c", command].run(retcode=None)
                 output = f"Stdout:\n{stdout}\nStderr:\n{stderr}\n"
-                print(f"  Output:\n{output}")
+                # print(f"  Output:\n{output}")
                 return output
             else:
                 return "User cancelled execution."
@@ -85,8 +86,8 @@ async def main():
     print("🤔 Thinking...")
 
     # The agent will now handle the conversation and tool calls automatically
-    response = await ai.run(query)
-    print(f"\n✅ Final Answer: {response}")
+    response: AgentRunResult = await ai.run(query)
+    print(f"\n✅ Final Answer: {response.output}")
 
 
 if __name__ == "__main__":
