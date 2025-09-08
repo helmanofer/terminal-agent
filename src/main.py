@@ -54,6 +54,101 @@ class ShellContext:
     max_iterations: int = 10
 
 
+async def run_shell_command(
+    ctx: RunContext[None],
+    command: Annotated[
+        str,
+        Field(
+            description="Valid shell command to execute. Use discovery "
+            "commands like 'docker ps', 'kubectl get pods', 'ps aux', "
+            "'ls', 'find' to explore first."
+        ),
+    ],
+    read_only: Annotated[
+        bool,
+        Field(
+            description="True for read-only commands (ls, ps, docker ps, "
+            "etc.), False for commands that modify state."
+        ),
+    ],
+    timeout: Annotated[
+        int,
+        Field(
+            default=30,
+            description="Timeout in seconds for command execution. "
+            "Default is 30 seconds. Use longer timeouts for commands "
+            "that may take time (e.g., large file operations, "
+            "network requests).",
+            ge=1,
+            le=300,
+        ),
+    ] = 30,
+) -> ShellResult:
+    """
+    Execute a shell command on the local system.
+
+    Use for:
+    - System exploration: ps, ls, find, docker ps, kubectl get
+    - Log viewing: tail, cat, journalctl, docker logs
+    - Status checking: systemctl status, df -h, top
+    - File operations: grep, sed, awk
+    """
+    print(f"\n[bold blue]▶️  Executing:[/bold blue] [yellow]`{command}`[/yellow] with timeout {timeout} seconds")
+
+    try:
+        execute = False
+        if read_only:
+            execute = True
+        else:
+            confirm = input("  Execute modifying command? (y/n): ").lower()
+            execute = confirm == "y"
+
+        if execute:
+            bash = local["bash"]
+            retcode, stdout, stderr = bash["-c", command].run(
+                retcode=None, timeout=timeout)
+
+            # Display output to user immediately
+            if stdout.strip():
+                print(f"[green]📄 Output:[/green]\n{stdout}")
+            if stderr.strip():
+                print(f"[yellow]⚠️  Stderr:[/yellow]\n{stderr}")
+            if retcode != 0:
+                print(f"[red]❌ Exit code: {retcode}[/red]")
+
+            # Determine success based on return code
+            success = retcode == 0
+            output = f"Exit code: {retcode}\nStdout:\n{stdout}\nStderr:\n{stderr}"
+
+            return ShellResult(command=command, output=output, success=success)
+        else:
+            return ShellResult(
+                command=command,
+                output="Command execution cancelled by user.",
+                success=False,
+            )
+
+    except ProcessExecutionError as e:
+        # Display error output to user immediately
+        if e.stdout.strip():
+            print(f"[green]📄 Output:[/green]\n{e.stdout}")
+        if e.stderr.strip():
+            print(f"[yellow]⚠️  Stderr:[/yellow]\n{e.stderr}")
+        print(f"[red]❌ Exit code: {e.retcode}[/red]")
+
+        output = (
+            f"Command failed with exit code {e.retcode}\n"
+            f"Stdout:\n{e.stdout}\nStderr:\n{e.stderr}"
+        )
+        return ShellResult(command=command, output=output, success=False)
+    except Exception as e:
+        return ShellResult(
+            command=command,
+            output=f"Unexpected error: {e}",
+            success=False,
+        )
+
+
 async def create_shell_agent(
     model: Any,
 ) -> Agent[None, TaskComplete | TaskContinue | TaskFailed]:
@@ -90,106 +185,10 @@ async def create_shell_agent(
 
     agent = Agent(  # type: ignore[call-overload]
         model,
-        tools=[search_tool],
+        tools=[search_tool, run_shell_command],
         system_prompt=system_prompt,
         output_type=TaskComplete | TaskContinue | TaskFailed,
     )
-
-    @agent.tool
-    def run_shell_command(
-        ctx: RunContext[None],
-        command: Annotated[
-            str,
-            Field(
-                description="Valid shell command to execute. Use discovery "
-                "commands like 'docker ps', 'kubectl get pods', 'ps aux', "
-                "'ls', 'find' to explore first."
-            ),
-        ],
-        read_only: Annotated[
-            bool,
-            Field(
-                description="True for read-only commands (ls, ps, docker ps, "
-                "etc.), False for commands that modify state."
-            ),
-        ],
-        timeout: Annotated[
-            int,
-            Field(
-                default=30,
-                description="Timeout in seconds for command execution. "
-                "Default is 30 seconds. Use longer timeouts for commands "
-                "that may take time (e.g., large file operations, "
-                "network requests).",
-                ge=1,
-                le=300,
-            ),
-        ] = 30,
-    ) -> ShellResult:
-        """
-        Execute a shell command on the local system.
-
-        Use for:
-        - System exploration: ps, ls, find, docker ps, kubectl get
-        - Log viewing: tail, cat, journalctl, docker logs
-        - Status checking: systemctl status, df -h, top
-        - File operations: grep, sed, awk
-        """
-        print(f"\n[bold blue]▶️  Executing:[/bold blue] [yellow]`{command}`[/yellow] with timeout {timeout} seconds")
-
-        try:
-            execute = False
-            if read_only:
-                execute = True
-            else:
-                confirm = input("  Execute modifying command? (y/n): ").lower()
-                execute = confirm == "y"
-
-            if execute:
-                bash = local["bash"]
-                retcode, stdout, stderr = bash["-c", command].run(
-                    retcode=None, timeout=timeout)
-
-                # Display output to user immediately
-                if stdout.strip():
-                    print(f"[green]📄 Output:[/green]\n{stdout}")
-                if stderr.strip():
-                    print(f"[yellow]⚠️  Stderr:[/yellow]\n{stderr}")
-                if retcode != 0:
-                    print(f"[red]❌ Exit code: {retcode}[/red]")
-
-                # Determine success based on return code
-                success = retcode == 0
-                output = f"Exit code: {retcode}\nStdout:\n{stdout}\n"
-                f"Stderr:\n{stderr}"
-
-                return ShellResult(command=command, output=output, success=success)
-            else:
-                return ShellResult(
-                    command=command,
-                    output="Command execution cancelled by user.",
-                    success=False,
-                )
-
-        except ProcessExecutionError as e:
-            # Display error output to user immediately
-            if e.stdout.strip():
-                print(f"[green]📄 Output:[/green]\n{e.stdout}")
-            if e.stderr.strip():
-                print(f"[yellow]⚠️  Stderr:[/yellow]\n{e.stderr}")
-            print(f"[red]❌ Exit code: {e.retcode}[/red]")
-
-            output = (
-                f"Command failed with exit code {e.retcode}\n"
-                f"Stdout:\n{e.stdout}\nStderr:\n{e.stderr}"
-            )
-            return ShellResult(command=command, output=output, success=False)
-        except Exception as e:
-            return ShellResult(
-                command=command,
-                output=f"Unexpected error: {e}",
-                success=False,
-            )
 
     return agent  # type: ignore[no-any-return]
 
