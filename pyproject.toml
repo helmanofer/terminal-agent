@@ -15,8 +15,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-  "pydantic-ai",
-  "google-generativeai",
+  "pydantic-ai[bedrock,google]",
   "plumbum",
   "ddgs",
   "rich>=13.0.0",

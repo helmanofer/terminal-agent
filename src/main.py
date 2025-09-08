@@ -8,10 +8,9 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext, RunUsage, UsageLimits
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.messages import ModelMessage
-from pydantic_ai.models.google import GoogleModel
-from pydantic_ai.providers.google import GoogleProvider
 from rich import print
 
+from src.llm_services import get_llm_service
 from src.settings import settings
 
 
@@ -274,8 +273,8 @@ async def async_main() -> None:
 
     query = " ".join(sys.argv[1:])
 
-    provider = GoogleProvider(api_key=settings.gemini_api_key)
-    model = GoogleModel(settings.gemini_model_name, provider=provider)
+    llm_service = get_llm_service(settings)
+    model = llm_service.get_model()
 
     print(f"[bold cyan]🎯 Goal:[/bold cyan] [white]{query}[/white]\n")
 
