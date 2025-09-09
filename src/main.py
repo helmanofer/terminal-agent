@@ -195,7 +195,7 @@ async def create_shell_agent(
 
 async def run_shell_workflow(query: str, model: Any) -> None:
     """Main workflow for handling shell queries with conversation continuity"""
-    print(f"[bold cyan]🔍 Starting shell workflow for:[/bold cyan] [white]{query}[/white]")
+    print(f"[bold cyan]Starting workflow for:[/bold cyan] [white]{query}[/white]")
 
     context = ShellContext(query=query, steps_taken=[], discoveries={})
 

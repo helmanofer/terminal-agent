@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from pydantic_ai.models import GoogleModel
-from pydantic_ai.models.bedrock import BedrockModel
-from pydantic_ai.providers import GoogleProvider
+from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.providers.google import GoogleProvider
+
+from pydantic_ai.models.bedrock import BedrockConverseModel
 from pydantic_ai.providers.bedrock import BedrockProvider
 
 from src.settings import Settings
@@ -28,27 +29,21 @@ class BedrockService(LLMService):
     def __init__(self, settings: Settings):
         self.settings = settings
 
-    def get_model(self) -> BedrockModel:
-        if self.settings.aws_profile_name:
-            provider = BedrockProvider(
-                profile_name=self.settings.aws_profile_name,
-                region_name=self.settings.aws_region_name,
-            )
-        else:
-            provider = BedrockProvider(
-                aws_access_key_id=self.settings.aws_access_key_id,
-                aws_secret_access_key=self.settings.aws_secret_access_key,
-                region_name=self.settings.aws_region_name,
-            )
-        return BedrockModel(self.settings.bedrock_model_name, provider=provider)
+    def get_model(self) -> BedrockConverseModel:
+        provider = BedrockProvider(
+            profile_name=self.settings.aws_profile_name,
+            region_name=self.settings.aws_region_name,
+            aws_access_key_id=self.settings.aws_access_key_id,
+            aws_secret_access_key=self.settings.aws_secret_access_key,
+        )
+
+        return BedrockConverseModel(self.settings.bedrock_model_name, provider=provider)
 
 
 def get_llm_service(settings: Settings) -> LLMService:
-    if settings.gemini_api_key:
+    if settings.provider == "google":
         return GoogleService(settings)
-    elif (
-        settings.aws_access_key_id and settings.aws_secret_access_key
-    ) or settings.aws_profile_name:
+    elif settings.provider == "bedrock":
         return BedrockService(settings)
     else:
         raise ValueError(
